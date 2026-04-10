@@ -1,0 +1,48 @@
+FROM php:8.3-fpm-alpine
+
+LABEL org.opencontainers.image.source="https://github.com/zynqa/magezero-php"
+LABEL org.opencontainers.image.description="MageZero PHP 8.3-fpm with Adobe Commerce extensions"
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+        libxml2 \
+        libxslt \
+        libzip \
+        oniguruma \
+        icu \
+        libpng \
+        libjpeg-turbo \
+        freetype \
+        libsodium \
+        bash \
+        git
+
+# Install build dependencies, PHP extensions, then clean up
+RUN apk add --no-cache --virtual .build-deps \
+        $PHPIZE_DEPS \
+        libxml2-dev \
+        libxslt-dev \
+        libzip-dev \
+        oniguruma-dev \
+        icu-dev \
+        libpng-dev \
+        libjpeg-turbo-dev \
+        freetype-dev \
+        libsodium-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install \
+        bcmath \
+        gd \
+        intl \
+        pdo_mysql \
+        soap \
+        sockets \
+        sodium \
+        xsl \
+        zip \
+    && apk del .build-deps
+
+# Install Composer 2.x
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+WORKDIR /var/www/html
